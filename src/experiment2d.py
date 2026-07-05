@@ -158,8 +158,9 @@ Readings to check (see results/exp2d_summary.md for the annotated run):
 - does the audit discriminate? (A ridge-probe-direction audit is expected to
   fail per Exhibit 4; a readout-aware audit is the fix.)
 """
-    (RESULTS / "exp2d_summary.md").write_text(summary, encoding="utf-8")
-    print(f"summary -> {RESULTS / 'exp2d_summary.md'}")
+    # _raw suffix: never overwrite the hand-annotated exp2d_summary.md
+    (RESULTS / "exp2d_summary_raw.md").write_text(summary, encoding="utf-8")
+    print(f"summary -> {RESULTS / 'exp2d_summary_raw.md'}")
 
 
 if __name__ == "__main__":

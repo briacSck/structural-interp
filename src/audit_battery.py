@@ -25,6 +25,7 @@ CF failure is high iff at least one channel fails, and the battery rank
 Outputs: results/battery_summary.md, results/battery.png.
 """
 
+import zlib
 from pathlib import Path
 
 import matplotlib
@@ -87,7 +88,7 @@ def main() -> None:
         audit_x = x_dispersion_audit(agent, truth)["x_dispersion"]
 
         panel = sol.simulate(n_buses=500, n_periods=200,
-                             rng=np.random.default_rng(hash(name) % 2**31),
+                             rng=np.random.default_rng(zlib.crc32(name.encode())),
                              policy=pol)
         print("  estimating NFXP...")
         est = estimate_nfxp_2d(panel, truth)
@@ -164,8 +165,9 @@ x-channel alone {rho_x:.2f}.
 
 (Annotate after inspection.)
 """
-    (RESULTS / "battery_summary.md").write_text(summary, encoding="utf-8")
-    print(f"summary -> {RESULTS / 'battery_summary.md'}")
+    # _raw suffix: never overwrite the hand-annotated battery_summary.md
+    (RESULTS / "battery_summary_raw.md").write_text(summary, encoding="utf-8")
+    print(f"summary -> {RESULTS / 'battery_summary_raw.md'}")
 
 
 if __name__ == "__main__":

@@ -12,7 +12,8 @@ Agent B ("heuristic"): an agent trained or constructed to use a mechanistically
                       off-distribution.
 
 The paper's punchline lives in the contrast: structural estimation (see
-estimate.py) fits both; probes (see probes.py) tell them apart; and
+estimate.py) fits both; linear probes (see probes.py) decode V(x) from both
+and so do NOT tell them apart — only causal patching audits do; and
 counterfactuals fail for exactly the agent whose internals lack the
 value-function representation.
 

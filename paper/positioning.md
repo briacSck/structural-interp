@@ -43,6 +43,38 @@ in the introduction, not buried:
    demonstrates it; the 2-D causal-patching exhibit converts the concession into
    the paper's positive methodological claim (lit review Q1).
 
+## Additions from the feynman code/lit audit (2026-07-06, verified)
+Full audit: `C:\Users\briac\feynman\outputs\structure-x-probing-ddc-audit.md`.
+
+**New must-cites (interp axis):**
+- **Elazar, Ravfogel, Jacovi & Goldberg (2021), "Amnesic Probing", TACL**
+  (arXiv:2006.00995) — decodability ≠ use is THEIR thesis; Exhibit 4 must
+  cite it and claim novelty only for the structural-econometrics setting.
+- **INLP (Ravfogel et al. 2020, ACL) → R-LACE → LEACE (Belrose et al.)** —
+  principled concept-erasure directions. Design upgrade: define audit
+  subspaces via LEACE (provably complete linear erasure) instead of the ad
+  hoc ridge direction (whose "anti-informative" behavior our zoo already
+  exhibited, as this literature predicts).
+
+**New must-cites (econ axis) — the zoo is a bounded-rationality family:**
+- blindbucket = **Gabaix (2014) sparse-max** (zero attention on c);
+- coarse2d/fine2d = **Fryer & Jackson (2008)** categorical cognition
+  (`bucket_average` IS their model);
+- λ-family = **Matějka & McKay (2015, AER)** RI-logit attenuation;
+  dynamics: **Steiner, Stewart & Matějka (2017, ECMA, DOI 10.3982/ECTA13636)**;
+- **Fosgerau, Melo, de Palma & Shum (2020, IER)** equivalence licenses
+  treating any bucketed/perturbed rule as an RI model — the zoo becomes
+  microfounded, not ad hoc;
+- **Fudenberg & Strzalecki (2015, ECMA, DOI 10.3982/ECTA11846)** for
+  dynamic-logit foundations; asym needs an asymmetric default/salience
+  structure (symmetric RI cannot produce it);
+- **Bugni & Ura (2019, QE)** — local misspecification bias in DDC/CCP
+  estimation: the theory behind our "confidently wrong" R̂C (5.9/6.7 vs 10).
+
+**Known identification caveat to state:** the NFXP passes true transition
+parameters (mileage process, cost chain) as known; estimating them is
+standard but should be said explicitly.
+
 ## The strongest-possible-result target (lit review Q2)
 A monotone relationship between an internal-audit statistic and counterfactual
 RMSE across a *family* of agents (not just two hand-built ones). Design the 2-D

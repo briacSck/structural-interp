@@ -27,6 +27,7 @@ predicts from NFXP(theta1, theta2, rc); truth = agent's actual policy there.
 Outputs: results/zoo_summary.md, results/zoo_audit_vs_failure.png.
 """
 
+import zlib
 from pathlib import Path
 
 import matplotlib
@@ -152,8 +153,10 @@ def main() -> None:
                                * np.abs(pol - sol.ccp_replace)))
         audits = run_audits(agent, truth)
 
+        # zlib.crc32 is deterministic across processes (builtin hash() is
+        # salted per-process and breaks reproducibility of the panel).
         panel = sol.simulate(n_buses=500, n_periods=200,
-                             rng=np.random.default_rng(hash(name) % 2**31),
+                             rng=np.random.default_rng(zlib.crc32(name.encode())),
                              policy=pol)
         print("  estimating NFXP...")
         est = estimate_nfxp_2d(panel, truth)
@@ -204,8 +207,9 @@ vs the agent's actual policy.
 where the probe-direction audit does not? Which out-of-class rules produce
 "confidently wrong" estimates?)
 """
-    (RESULTS / "zoo_summary.md").write_text(summary, encoding="utf-8")
-    print(f"summary -> {RESULTS / 'zoo_summary.md'}")
+    # _raw suffix: never overwrite the hand-annotated zoo_summary.md
+    (RESULTS / "zoo_summary_raw.md").write_text(summary, encoding="utf-8")
+    print(f"summary -> {RESULTS / 'zoo_summary_raw.md'}")
 
 
 if __name__ == "__main__":

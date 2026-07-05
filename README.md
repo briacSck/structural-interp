@@ -30,9 +30,12 @@ is fully separate from the `discrete_vibecoding` working paper; it uses the
    estimator (week 5) run on each agent's simulated choices. Compare recovered
    θ̂ across agents; run counterfactuals (e.g. change RC) and score predicted
    vs. actual agent behavior.
-5. **Punchline**: structural estimation fits both agents; probes tell them
-   apart; counterfactuals fail for exactly the agent whose internals lack the
-   value representation.
+5. **Punchline** (as the results actually came out): structural estimation
+   fits both agents; linear probes do NOT tell them apart (decodability is
+   not use — the amnesic-probing lesson, Elazar et al. 2021); a battery of
+   *causal* internal audits (readout-aware patching, one test per mechanism
+   channel) does — and it rank-orders which agents' counterfactuals fail
+   (Spearman 1.00 on the 5-agent zoo).
 
 ## 2-D extension (`src/*2d.py`)
 
