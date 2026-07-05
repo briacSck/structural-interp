@@ -34,6 +34,24 @@ is fully separate from the `discrete_vibecoding` working paper; it uses the
    apart; counterfactuals fail for exactly the agent whose internals lack the
    value representation.
 
+## 2-D extension (`src/*2d.py`)
+
+The 1-D pilot exposed the probing degeneracy (any monotone function of
+mileage "decodes" V; Exhibits 2 and 4). The 2-D environment adds an
+observable **cost regime** c (persistent Markov chain) scaling maintenance
+costs by θ₂. A one-parameter **agent family** (λ = how much the agent uses
+the regime; λ=1 clone, λ=0 regime-blind) enables the paper's target exhibit:
+
+- probes decode c from *every* agent (it's in the inputs) — non-discriminating;
+- **causally patching the c-direction** moves behavior only where c is used —
+  the internal audit;
+- the audit statistic vs regime-shift **counterfactual RMSE** across the
+  family: a monotone relationship means the internal audit predicts, ex ante,
+  how badly structural counterfactuals fail. Run: `py src\experiment2d.py`.
+
+Positioning notes and must-cite list (verified lit review, 2026-07-05):
+`paper/positioning.md`.
+
 ## Pilot timeline (6 weeks)
 
 | Week | Milestone |
