@@ -1,0 +1,8 @@
+numpy
+scipy
+matplotlib
+pytest
+torch
+# transformer_lens is only needed once we move beyond MLPs to small
+# transformers (post-pilot); uncomment then:
+# transformer_lens
