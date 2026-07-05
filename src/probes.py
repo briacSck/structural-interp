@@ -64,9 +64,110 @@ def probe_agent_for_value(agent, solution) -> list[dict]:
     return results
 
 
-def activation_patch(agent, source_state: int, target_state: int):
-    """TODO (week 4): patch hidden activations across states, measure output shift."""
-    raise NotImplementedError
+def _forward_from(agent, layer: int, activation):
+    """Resume the MLP forward pass from the post-ReLU activation of `layer`.
+
+    MLPAgent.net is [Linear, ReLU, Linear, ReLU, ..., Linear]; the post-ReLU
+    activation of hidden layer k sits after net index 2k + 1.
+    """
+    import torch
+
+    h = activation
+    for module in agent.net[2 * layer + 2:]:
+        h = module(h)
+    return h.squeeze(-1)
+
+
+def directional_patch(agent, layer: int, direction: np.ndarray,
+                      source_state: int, target_state: int,
+                      n_states: int) -> dict:
+    """Patch only the `direction` component of layer-`layer` activations.
+
+    Runs the agent on target_state but overwrites the activation component
+    along `direction` with its value at source_state, leaving the orthogonal
+    complement untouched. Returns output logits for the clean target, the
+    patched run, and the clean source.
+
+    If the probed direction is causally used, the patched logit moves toward
+    the source logit; if the probe was merely correlational, it barely moves.
+    """
+    import torch
+    from train_agents import state_features
+
+    u = direction / np.linalg.norm(direction)
+    feats = torch.tensor(
+        state_features(np.array([source_state, target_state]), n_states),
+        dtype=torch.float32)
+    with torch.no_grad():
+        acts = agent.hidden_activations(feats)[layer]
+        a_source, a_target = acts[0], acts[1]
+        u_t = torch.tensor(u, dtype=torch.float32)
+        shift = torch.dot(a_source - a_target, u_t) * u_t
+        a_patched = a_target + shift
+        logit_target = _forward_from(agent, layer, a_target).item()
+        logit_patched = _forward_from(agent, layer, a_patched).item()
+        logit_source = _forward_from(agent, layer, a_source).item()
+    return {"logit_target": logit_target, "logit_patched": logit_patched,
+            "logit_source": logit_source}
+
+
+def readout_direction(agent, layer: int) -> np.ndarray:
+    """First-order direction the network actually reads from `layer`.
+
+    For the last hidden layer this is exactly the output weights w_out; for
+    earlier layers we propagate through the downstream linear maps
+    (ignoring ReLU gating, so it is a first-order approximation):
+    d = W_{L}^T ... W_{layer+2}^T w_out.
+    """
+    import torch
+
+    linears = [m for m in agent.net if isinstance(m, torch.nn.Linear)]
+    d = linears[-1].weight.detach().numpy().ravel()
+    for lin in reversed(linears[layer + 1:-1]):
+        d = lin.weight.detach().numpy().T @ d
+    return d
+
+
+def patching_recovery(agent, solution, layer: int,
+                      min_state: int = 10, max_state: int = 75,
+                      min_gap: int = 20, seed: int = 0) -> dict:
+    """Mean causal recovery of the V(x) probe direction vs a random control.
+
+    Recovery for a (source, target) pair = fraction of the clean
+    logit gap (source minus target) reproduced by patching only the probed
+    direction. ~1 means the direction carries the decision-relevant signal;
+    ~0 means the probe was decodable but causally idle.
+    """
+    import torch
+    from train_agents import state_features
+
+    k = solution.mdp.n_states
+    feats = torch.tensor(state_features(np.arange(k), k), dtype=torch.float32)
+    with torch.no_grad():
+        acts = agent.hidden_activations(feats)[layer].numpy()
+
+    probe_dir = ridge_probe(acts, solution.v_bar)["weights"]
+    rng = np.random.default_rng(seed)
+    random_dir = rng.standard_normal(probe_dir.shape)
+    readout_dir = readout_direction(agent, layer)
+
+    recoveries = {"probe": [], "random": [], "readout": []}
+    states = np.arange(min_state, max_state)
+    for target in states[::5]:
+        for source in states[::5]:
+            if abs(int(source) - int(target)) < min_gap:
+                continue
+            for name, d in (("probe", probe_dir), ("random", random_dir),
+                            ("readout", readout_dir)):
+                out = directional_patch(agent, layer, d, int(source),
+                                        int(target), k)
+                gap = out["logit_source"] - out["logit_target"]
+                if abs(gap) < 0.5:  # skip pairs with no behavioral contrast
+                    continue
+                recoveries[name].append(
+                    (out["logit_patched"] - out["logit_target"]) / gap)
+    return {name: float(np.mean(vals)) if vals else np.nan
+            for name, vals in recoveries.items()}
 
 
 if __name__ == "__main__":
