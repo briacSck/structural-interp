@@ -1,0 +1,20 @@
+# Microfounded zoo v2 — LEACE amnesic audit x battery (raw)
+
+n = 13 agents. Spearman with CF RMSE: battery 0.16,
+c-channel alone -0.01, x-channel alone 0.53.
+
+| agent | family | beh gap | LEACE c-audit | x-dispersion | theta1 | theta2 | RC | CF RMSE |
+|---|---|---|---|---|---|---|---|---|
+| clone | optimal | 0.00099 | 0.04465 | 0.6262 | 0.04651 | 0.8528 | 9.533 | 0.00813 |
+| cat4x1 | Fryer-Jackson categories | 0.03468 | 0.00177 | 1.1477 | 0.01883 | 0.0145 | 4.593 | 0.21818 |
+| cat6x1 | Fryer-Jackson categories | 0.02558 | 0.00151 | 1.0247 | 0.03406 | 0.0467 | 6.302 | 0.11819 |
+| cat6x2 | Fryer-Jackson categories | 0.02375 | 0.02676 | 0.8150 | 0.02885 | 0.6330 | 6.543 | 0.10685 |
+| cat8x2 | Fryer-Jackson categories | 0.01426 | 0.04732 | 0.7689 | 0.03284 | 0.5907 | 7.014 | 0.07546 |
+| cat12x3 | Fryer-Jackson categories | 0.00561 | 0.03779 | 0.6637 | 0.04362 | 0.6805 | 8.720 | 0.02330 |
+| cat16x5 | Fryer-Jackson categories | 0.00296 | 0.04255 | 0.5281 | 0.04463 | 0.8289 | 9.200 | 0.01690 |
+| sparse_m0.0 | Gabaix sparse-max | 0.01874 | 0.00087 | 0.8155 | 0.07068 | 0.0048 | 10.051 | 0.00482 |
+| sparse_m0.5 | Gabaix sparse-max | 0.00926 | 0.02138 | 0.6370 | 0.06157 | 0.3372 | 10.167 | 0.00789 |
+| ri_lam0.25 | Matejka-McKay RI | 0.01420 | 0.00953 | 0.7377 | 0.06421 | 0.1311 | 9.739 | 0.00796 |
+| ri_lam0.75 | Matejka-McKay RI | 0.00495 | 0.03348 | 0.6634 | 0.05459 | 0.5400 | 9.897 | 0.00536 |
+| asym_low | salience asym | 0.01184 | 0.02208 | 0.7147 | 0.06538 | 0.2769 | 9.911 | 0.02638 |
+| asym_high | salience asym | 0.00814 | 0.02037 | 0.6967 | 0.05177 | 0.4203 | 9.864 | 0.02297 |
