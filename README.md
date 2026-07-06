@@ -1,75 +1,84 @@
-# Structural Estimation Meets Ground Truth
+# Do Structural Models Recover Mechanisms?
+### Evidence from Neural Agents with Observable Internals
 
 **Research question.** When an econometrician estimates a structural model
-(dynamic discrete choice) on a neural agent's behavior, do the recovered
-parameters correspond to the agent's actual internal mechanism — and can
-mechanistic interpretability tools detect, *ex ante*, when structural
-counterfactuals will fail?
+(dynamic discrete choice) on an agent's behavior, do the recovered parameters
+capture the agent's actual decision *mechanism* — and can causal
+interpretability audits detect, *ex ante*, which counterfactuals will fail?
+With human data this is untestable; with neural agents the mechanism is fully
+observable. **Draft note: [`paper/note.tex`](paper/note.tex).**
 
-**Positioning.** Vafa–Rambachan–Mullainathan–Kleinberg (NeurIPS 2024) test
-whether generative models have coherent world models *behaviorally*. We go
-inside the network — "Othello-GPT for structural econometrics." This project
-is fully separate from the `discrete_vibecoding` working paper; it uses the
-*textbook* Rust (1987) bus-replacement model purely as a canonical laboratory.
+## Findings (as they actually came out)
 
-> **Environment choice (revisit at week 2):** default is the textbook bus
-> problem. Drop-in alternatives if we want more distance from anything
-> Rust-flavored: consumer savings/borrowing, firm entry/exit, job search.
-> The research question is environment-agnostic.
+1. **In-class bounded rationality is benign.** Inattentive agents (Gabaix
+   sparse-max, Matějka–McKay RI) are absorbed into as-if parameters — θ̂₂
+   tracks the attention parameter almost linearly — and their
+   counterfactuals stay accurate, *including* a pre-registered Lucas-style
+   subsidy experiment in which agents re-learn. The Fosgerau et al. (2020)
+   RI–logit equivalence, made empirical.
+2. **Out-of-class cognition fails silently.** Categorical agents
+   (Fryer–Jackson lookup rules) with 2–3% behavioral gaps yield
+   replacement-cost estimates of 4.6–7.0 vs a truth of 10, and a predicted
+   policy response to the subsidy roughly **twice** the actual one — with
+   smooth likelihoods and interior optima throughout.
+3. **Probes can't see it; causal conformity audits can.** Linear probes
+   decode everything from everyone (R² ≈ 1) and their directions are
+   causally idle (the amnesic-probing lesson, Elazar et al. 2021). A
+   **conformity audit** — dispersion of locally patched causal sensitivities
+   per state variable, with an insensitivity gate — computed on
+   in-distribution activations only, rank-predicts counterfactual failure:
+   **Spearman 0.87** (regime-shift transport) and **0.80** (subsidy with
+   re-learning) across 13 microfounded agents.
 
-## Design
+**Thesis.** Internal audits are specification tests on mechanisms: each
+channel audit checks conformity of the agent's computation to the assumed
+model class, and each counterfactual is threatened exactly by the channels it
+stresses. Scope boundary (companion paper): under *endogenous* attention the
+cognitive primitive itself moves with policy — the Lucas critique one level
+up — and pre-policy audits cannot see it.
 
-1. **Ground truth** (`src/mdp.py`): solve the MDP exactly (value iteration),
-   giving the true value function, CCPs, and parameters θ = (θ₁, RC).
-2. **Agents** (`src/train_agents.py`): (a) an MLP behaviorally cloned on the
-   optimal policy; (b) a mechanistically different agent (noisy threshold
-   heuristic or early-stopped RL) that matches (a)'s behavior in-distribution.
-3. **Interpretability** (`src/probes.py`): linear probes for the value
-   function in hidden layers; activation patching for causal use.
-4. **Econometrics** (`src/estimate.py`): NFXP MLE (done) and Hotz–Miller CCP
-   estimator (week 5) run on each agent's simulated choices. Compare recovered
-   θ̂ across agents; run counterfactuals (e.g. change RC) and score predicted
-   vs. actual agent behavior.
-5. **Punchline** (as the results actually came out): structural estimation
-   fits both agents; linear probes do NOT tell them apart (decodability is
-   not use — the amnesic-probing lesson, Elazar et al. 2021); a battery of
-   *causal* internal audits (readout-aware patching, one test per mechanism
-   channel) does — and it rank-orders which agents' counterfactuals fail
-   (Spearman 1.00 on the 5-agent zoo).
+## Repo map
 
-## 2-D extension (`src/*2d.py`)
-
-The 1-D pilot exposed the probing degeneracy (any monotone function of
-mileage "decodes" V; Exhibits 2 and 4). The 2-D environment adds an
-observable **cost regime** c (persistent Markov chain) scaling maintenance
-costs by θ₂. A one-parameter **agent family** (λ = how much the agent uses
-the regime; λ=1 clone, λ=0 regime-blind) enables the paper's target exhibit:
-
-- probes decode c from *every* agent (it's in the inputs) — non-discriminating;
-- **causally patching the c-direction** moves behavior only where c is used —
-  the internal audit;
-- the audit statistic vs regime-shift **counterfactual RMSE** across the
-  family: a monotone relationship means the internal audit predicts, ex ante,
-  how badly structural counterfactuals fail. Run: `py src\experiment2d.py`.
-
-Positioning notes and must-cite list (verified lit review, 2026-07-05):
-`paper/positioning.md`.
-
-## Pilot timeline (6 weeks)
-
-| Week | Milestone |
+| Path | What it is |
 |---|---|
-| 1–2 | PyTorch ramp (see `learning/week1_checklist.md`) + ground truth module ✅ |
-| 3 | Both agents trained, behavioral equivalence verified |
-| 4 | Probe + patching results, clone vs heuristic contrast figure |
-| 5 | Structural estimates + counterfactual failure exhibit |
-| 6 | 6–10 page research note (arXiv/SSRN) + accessible post |
+| `paper/note.tex` | The research note (~9 pp., self-contained; compile on Overleaf) |
+| `paper/positioning.md` | Novelty verdict, must-cites, referee traps (from verified lit reviews) |
+| `paper/prereg_subsidy_cf.md` | Pre-registration of the subsidy experiment (committed before the run) |
+| `src/mdp.py`, `src/mdp2d.py` | Ground-truth environments (Rust 1987; + observable cost regime), exact solutions |
+| `src/estimate.py`, `src/estimate2d.py` | NFXP MLE and Hotz–Miller CCP estimators (recovery-tested) |
+| `src/train_agents.py`, `src/train_agents2d.py` | MLP agents; λ-family |
+| `src/zoo_v2.py` | **Main experiment**: 13 microfounded agents (categories, sparse-max, RI, salience), resumable |
+| `src/probes.py`, `src/leace.py` | Linear probes, directional patching, LEACE erasure + amnesic audit |
+| `src/audit_battery.py`, `src/c_conformity.py` | Per-channel dispersion audits + conformity score (the diagnostic) |
+| `src/subsidy_counterfactual.py` | Pre-registered subsidy CF with stable-cognitive-primitive re-learning |
+| `src/experiment.py`, `src/patching_experiment.py`, `src/experiment2d.py`, `src/experiment2d_zoo.py` | Earlier exhibits (1-D pilot; probe-direction patching; λ-family; ad-hoc zoo) |
+| `results/*.md` | Annotated run summaries (`*_raw.md` = script output, never overwritten by reruns) |
+| `learning/` | Mech-interp ramp checklist (historical) |
 
-## Setup & verification
+## Reproduce
 
 ```powershell
 py -m venv .venv
 .venv\Scripts\pip install -r requirements.txt
-py -m pytest tests -v          # validates VI, simulation, and NFXP recovery
-py src\mdp.py                  # quick ground-truth sanity print
+.venv\Scripts\python -m pytest tests -v        # 12 tests: VI, simulation, NFXP + HM recovery, agents, 2-D env
+.venv\Scripts\python src\zoo_v2.py             # main experiment (resumable; ~20 min CPU)
+.venv\Scripts\python src\c_conformity.py       # conformity audit (Spearman 0.87)
+.venv\Scripts\python src\subsidy_counterfactual.py  # pre-registered subsidy CF (Spearman 0.80)
 ```
+
+Deterministic seeding throughout (`zlib.crc32`, torch seed 0). Laptop CPU
+only; no GPU required.
+
+## Positioning (one paragraph)
+
+Vafa–Chang–Rambachan–Mullainathan (ICML 2025) show foundation models fit
+orbits with heuristics that fail to generalize — *behaviorally*. We go inside
+the network, in an economic laboratory with exact ground truth, and connect
+the internals to the validity of an econometric procedure. The DDC
+identification results (Magnac–Thesmar 2002; Kalouptsidi et al. 2021; Bugni–
+Ura 2019) are the theory our lab makes visible and diagnosable; the
+contribution is the synthesis plus the ex-ante audit. Full citation map:
+`paper/positioning.md`.
+
+*Separate from the author's `discrete_vibecoding` working paper; the Rust
+(1987) model is used purely as a canonical laboratory.*
