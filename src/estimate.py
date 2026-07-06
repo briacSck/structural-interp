@@ -62,9 +62,52 @@ def estimate_nfxp(panel: Panel, template: RustMDP,
                             log_likelihood=-res.fun, converged=res.success)
 
 
-def estimate_hotz_miller(panel: Panel, template: RustMDP) -> EstimationResult:
-    """CCP estimator (Hotz & Miller 1993) using replacement as renewal action."""
-    raise NotImplementedError("week 5: implement CCP inversion estimator")
+def estimate_hotz_miller(panel: Panel, template: RustMDP,
+                         min_visits: int = 30) -> EstimationResult:
+    """CCP estimator (Hotz & Miller 1993) using replacement as renewal action.
+
+    With T1EV shocks and a renewal action, V(x) = v1 - ln P1(x) where v1 is
+    constant across x (replacing resets the state). Substituting into the
+    log-odds phi(x) = ln(P1(x)/P0(x)) makes the constant terms cancel:
+
+        phi(x) = -RC + theta1*x
+                 + beta * [ E(-ln P1 | replace) - E(-ln P1 | x, keep) ]
+
+    which is LINEAR in (theta1, RC) given nonparametric CCPs and known
+    transitions. Estimated by visit-weighted least squares over states with
+    at least `min_visits` observations. No fixed point is ever solved.
+    """
+    ccp_hat, counts = panel.empirical_ccp(template.n_states)
+    mask = counts >= min_visits
+    # Unvisited states have NaN CCPs but enter the continuation-value
+    # correction through the transition matrix: fill them by interpolating
+    # over visited states (extrapolation holds the boundary value).
+    xs = np.arange(template.n_states, dtype=float)
+    visited = counts > 0
+    ccp_filled = np.interp(xs, xs[visited], ccp_hat[visited])
+    p1 = np.clip(ccp_filled, 1e-4, 1 - 1e-4)
+
+    p_keep = template.transition_matrix()
+    p_replace = p_keep[0]
+    neg_log_p1 = -np.log(p1)
+    correction = template.beta * (p_replace @ neg_log_p1
+                                  - p_keep @ neg_log_p1)
+
+    # phi(x) - correction(x) = theta1 * x - RC, fit by weighted least squares
+    x = np.arange(template.n_states, dtype=float)
+    y = np.log(p1 / (1 - p1)) - correction
+    w = counts.astype(float)
+    design = np.column_stack([x[mask], -np.ones(mask.sum())])
+    wls = np.sqrt(w[mask])
+    coef, *_ = np.linalg.lstsq(design * wls[:, None], y[mask] * wls,
+                               rcond=None)
+    theta1_hat, rc_hat = coef
+
+    ll = float(np.sum(np.where(panel.choices == 1,
+                               np.log(p1[panel.states]),
+                               np.log1p(-p1[panel.states]))))
+    return EstimationResult(theta1=float(theta1_hat), rc=float(rc_hat),
+                            log_likelihood=ll, converged=True)
 
 
 if __name__ == "__main__":
@@ -72,5 +115,7 @@ if __name__ == "__main__":
     panel = truth.solve().simulate(n_buses=500, n_periods=200)
     print("estimating on optimal-policy data (truth: theta1=0.05, rc=10.0)...")
     result = estimate_nfxp(panel, truth)
-    print(f"theta1_hat = {result.theta1:.5f}, rc_hat = {result.rc:.4f}, "
-          f"converged = {result.converged}")
+    print(f"NFXP:        theta1_hat = {result.theta1:.5f}, "
+          f"rc_hat = {result.rc:.4f}")
+    hm = estimate_hotz_miller(panel, truth)
+    print(f"Hotz-Miller: theta1_hat = {hm.theta1:.5f}, rc_hat = {hm.rc:.4f}")

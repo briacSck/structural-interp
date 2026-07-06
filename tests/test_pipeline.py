@@ -51,3 +51,16 @@ def test_nfxp_recovers_true_parameters(solution):
     assert result.converged
     assert abs(result.theta1 - truth.theta1) < 0.005
     assert abs(result.rc - truth.rc) < 1.0
+
+
+def test_hotz_miller_recovers_true_parameters(solution):
+    from estimate import estimate_hotz_miller
+
+    truth = solution.mdp
+    panel = solution.simulate(n_buses=500, n_periods=200,
+                              rng=np.random.default_rng(7))
+    result = estimate_hotz_miller(panel, truth)
+    # CCP estimator: noisier than NFXP (nonparametric first stage), so
+    # tolerances are looser but must still bracket the truth.
+    assert abs(result.theta1 - truth.theta1) < 0.01
+    assert abs(result.rc - truth.rc) < 1.5
