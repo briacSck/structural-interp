@@ -1,0 +1,527 @@
+\documentclass[11pt]{article}
+\usepackage[margin=1.1in]{geometry}
+\usepackage{amsmath, amssymb}
+\usepackage{booktabs}
+\usepackage{graphicx}
+\usepackage[hidelinks]{hyperref}
+\usepackage{caption}
+\captionsetup{font=small, labelfont=bf}
+
+\newcommand{\rhat}{\widehat{RC}}
+\newcommand{\that}[1]{\widehat{\theta}_{#1}}
+
+\title{Do Structural Models Recover Mechanisms?\\
+\large Evidence from Neural Agents with Observable Internals}
+\author{Briac Sockalingum\thanks{briac@berkeley.edu. Research note.
+Code and full results: \url{https://github.com/briacSck/structural-interp}.
+The subsidy-counterfactual experiment in Section~\ref{sec:subsidy} was
+pre-registered in the repository before execution.}}
+\date{July 2026 --- Working note}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+\noindent Structural econometrics earns its keep through counterfactuals,
+which are valid only if estimated parameters capture the agent's decision
+\emph{mechanism} rather than merely fitting its behavior. With human data
+this premise is untestable: the mechanism is never observed. We build a
+laboratory where it is. Neural-network agents trained on a canonical dynamic
+discrete choice environment (a two-state-variable version of Rust's (1987)
+bus-engine replacement problem) are fully inspectable with
+mechanistic-interpretability tools, and each agent instantiates a named
+bounded-rationality primitive: rational-inattention attenuation
+(Mat\v{e}jka--McKay), sparse-max attention (Gabaix), categorical cognition
+(Fryer--Jackson), and salience asymmetry. Three findings. First, structural
+estimation is \emph{robust} to bounded rationality that stays inside the
+model class: inattentive agents' attention is absorbed into as-if
+parameters, and counterfactuals --- including a pre-registered Lucas-style
+subsidy experiment in which agents re-learn --- remain accurate. Second,
+estimation fails \emph{silently} for cognition outside the model class:
+categorical agents with 2--3\% behavioral gaps yield replacement-cost
+estimates biased by up to a factor of two and policy-response predictions
+wrong by a factor of two. Third, linear probes cannot tell these cases apart
+(decodability is not use), but a battery of \emph{causal conformity audits}
+--- the dispersion of locally patched sensitivities per state variable,
+computed on in-distribution activations only --- rank-predicts
+counterfactual failure (Spearman 0.87 for out-of-distribution transport,
+0.80 for the subsidy experiment). Internal audits, we argue, are usefully
+understood as specification tests on mechanisms, and their scope is
+delimited exactly by the invariance of the cognitive primitive.
+\end{abstract}
+
+\section{Introduction}\label{sec:intro}
+
+A structural econometrician who estimates a dynamic discrete choice (DDC)
+model does not merely summarize behavior; she claims to have recovered
+\emph{deep} parameters --- maintenance costs, replacement costs, attention to
+economic conditions --- that remain invariant when policy changes, and that
+therefore license counterfactual prediction \citep[in the sense
+of][]{lucas1976, heckman2010}. The claim has a well-known analytical
+vulnerability: DDC models are not nonparametrically identified
+\citep{magnacthesmar2002}, identification of counterfactuals is delicate
+\citep{kalouptsidi2021}, and local misspecification translates into
+first-order bias \citep{bugniura2019}. What the literature has lacked is a
+setting in which the vulnerability can be \emph{observed}: with human
+subjects one never sees the true decision mechanism, so one can never say,
+for a given estimated model, whether its parameters describe the mechanism
+or merely fit the choices.
+
+This note builds such a setting. Our agents are small neural networks
+trained to implement decision rules in a solved dynamic environment. Their
+behavior can be simulated at scale; their parameters --- every weight ---
+are observable; and the tools of mechanistic interpretability
+\citep{alainbengio2016, heimersheimnanda2024, elazar2021} allow causal
+interventions on their internal representations. Crucially, we do not
+construct arbitrary decision rules. Each agent instantiates a
+bounded-rationality primitive with a name and a literature: rational
+inattention in the logit family \citep{matejkamckay2015, steiner2017},
+sparse-max attention \citep{gabaix2014}, categorical cognition
+\citep{fryerjackson2008}, and asymmetric salience. By the equivalence
+results of \citet{fosgerau2020}, the inattentive agents remain
+\emph{inside} the parametric class the econometrician assumes, while the
+categorical agents do not --- and this distinction, we will show, is exactly
+what determines counterfactual validity.
+
+The experiment has the structure of a sting operation. All agents are
+behaviorally similar where the data live (ergodic choice-probability gaps of
+1--3\%). We hand their simulated panels to a standard estimator (nested
+fixed point maximum likelihood; a Hotz--Miller CCP estimator gives the same
+picture), obtain plausible, well-converged estimates for every agent, and
+then ask two questions. \emph{Ex post}: do the estimated models predict
+behavior under counterfactuals --- an out-of-distribution regime shift, and
+a pre-registered 50\% replacement subsidy under which agents re-learn?
+\emph{Ex ante}: could an auditor with access to the agent's internals, but
+only in-distribution data, have predicted which counterfactuals would fail?
+
+Three results. \textbf{First, in-class bounded rationality is benign.} The
+estimator absorbs inattention into as-if parameters --- the estimated
+regime-sensitivity $\that{2}$ tracks the attention parameter across the
+sparse-max and rational-inattention families almost linearly --- and the
+resulting counterfactuals are correct \emph{for those agents}, including
+under the subsidy experiment with re-learning. A fully regime-blind
+sparse-max agent is fit with $\that{2}\approx 0$ and its policy predictions
+are the most accurate in our zoo. This is \citet{fosgerau2020} made
+empirical, and it is good news for structural practice that we have not seen
+stated this way. \textbf{Second, out-of-class cognition fails silently.}
+Categorical agents --- lookup tables over coarse state categories --- are
+projected onto the parametric class: replacement-cost estimates fall to
+4.6--7.0 against a truth of 10, nothing in the likelihood signals a problem,
+and the predicted response to the subsidy is roughly twice the actual
+response. \textbf{Third, causal internal audits see the difference where
+probes cannot.} Linear probes decode the environment state from every
+agent's activations ($R^2 \approx 1$) and are useless; their directions are
+causally idle, reproducing the amnesic-probing lesson of \citet{elazar2021}
+in an economic setting. But a \emph{conformity audit} --- the dispersion of
+locally patched causal sensitivities along each state variable, gated by
+insensitivity --- rank-predicts counterfactual failure at Spearman 0.87
+(regime transport) and 0.80 (subsidy), using in-distribution activations
+only.
+
+We state the honest position of these results in the literature up front.
+That DDC counterfactuals can fail under misspecification is known theory
+\citep{magnacthesmar2002, kalouptsidi2021, bugniura2019}; that sequence
+models can fit behavior with heuristics that fail to generalize is known in
+machine learning \citep{vafa2024, vafa2025}; that decodability does not
+imply causal use is the amnesic-probing thesis \citep{elazar2021}. Our
+contribution is the synthesis: a ground-truth laboratory in which the
+analytical failure becomes \emph{visible at the level of mechanism}, an
+economically microfounded taxonomy of when it occurs (in-class versus
+out-of-class cognition), and a demonstration that internal causal audits
+constitute a workable \emph{ex-ante specification test} --- a category of
+test that cannot exist for human agents but will exist for the algorithmic
+agents increasingly making pricing, credit, and hiring decisions.
+
+\section{Related work}\label{sec:lit}
+
+\paragraph{World models and behavioral probes.} \citet{vafa2024} develop
+behavioral metrics for the world model implicit in a generative model;
+\citet{vafa2025} show foundation models trained on orbital trajectories
+predict well yet fail to carry Newtonian mechanics to new tasks ---
+``task-specific heuristics that fail to generalize,'' the phenomenon our
+categorical agents exhibit. Both operate on behavior. We go inside the
+network, which is what permits the \emph{ex-ante} audit. The closest
+interpretability precedents are Othello-GPT \citep{li2023, nanda2023},
+which established that sequence models can carry causally used world
+representations, and \citet{mcgrath2022}, who probe AlphaZero for chess
+concepts including value. None of these touch estimation: no econometric
+procedure, no parameter recovery, no counterfactual-validity claim.
+
+\paragraph{Identification and misspecification in DDC.}
+\citet{magnacthesmar2002} establish nonparametric non-identification;
+\citet{kalouptsidi2021} characterize which counterfactuals remain identified;
+\citet{bugniura2019} derive the bias from local misspecification. Our
+laboratory realizes these results concretely --- the categorical agents are
+the misspecification, the biased $\rhat$ is the predicted consequence ---
+and adds the diagnostic layer. In machine-learning dialect the same problem
+is the partial identifiability of rewards in inverse reinforcement learning
+\citep{skalseabate2024}.
+
+\paragraph{Bounded rationality.} Our agent zoo is a set of named
+primitives: RI-logit \citep{matejkamckay2015, steiner2017}, sparse-max
+\citep{gabaix2014}, categorical cognition \citep{fryerjackson2008}. The
+general equivalence of \citet{fosgerau2020} explains our central taxonomy:
+attenuation-type inattention is observationally a member of the logit class,
+hence absorbable into parameters; piecewise-constant categorization is not.
+
+\paragraph{Interpretability methodology.} Linear probes
+\citep{alainbengio2016} establish decodability only; amnesic probing
+\citep{elazar2021} and the concept-erasure line INLP--LEACE
+\citep{ravfogel2020, belrose2023} establish that decodability and use come
+apart, and supply the principled erasure operators we adopt; activation
+patching \citep{heimersheimnanda2024} is our causal instrument.
+
+\section{The laboratory}\label{sec:lab}
+
+\subsection{Environment}
+The ground truth is a two-state-variable extension of \citet{rust1987}.
+Mileage $x \in \{0,\dots,59\}$ accumulates stochastically; an observable
+cost regime $c \in \{0,\dots,4\}$ (fuel price, labor cost, compliance
+regime) follows a persistent Markov chain. Each period the agent keeps or
+replaces the engine:
+\[
+u\big((x,c),\,\text{keep}\big) = -\theta_1\, x\Big(1 + \theta_2\,
+\tfrac{c}{4}\Big), \qquad
+u\big((x,c),\,\text{replace}\big) = -RC,
+\]
+with additive type-I extreme-value shocks, discount factor $\beta = 0.95$,
+and truth $(\theta_1, \theta_2, RC) = (0.05,\, 0.8,\, 10)$. Replacement
+resets mileage. The model is solved exactly by value iteration, giving the
+true value function, conditional choice probabilities (CCPs), and optimal
+policy.
+
+\subsection{Agents: a microfounded zoo}
+All thirteen agents share one architecture --- a two-hidden-layer MLP
+mapping state features to a replacement probability --- and differ only in
+the decision rule they are trained to implement:
+the \emph{clone} (optimal CCPs); six \emph{categorical} agents that act on
+ergodic-weighted category averages of the optimal policy over grids from
+$4\times1$ to $16\times5$ \citep{fryerjackson2008}; two \emph{sparse-max}
+agents perceiving $c' = m c + (1-m)\bar c$ with attention $m \in \{0, 0.5\}$
+\citep{gabaix2014}; two \emph{RI} agents attenuating toward the regime-blind
+policy with weight $\lambda \in \{0.25, 0.75\}$ \citep{matejkamckay2015,
+fosgerau2020}; and two \emph{salience-asymmetric} agents that ignore
+regimes below (above) the median. Identical architectures and inputs mean
+that any difference in whether a variable is \emph{causally used} lives in
+the learned weights --- precisely what an internal audit must detect.
+
+\subsection{The econometrician}
+For each agent we simulate a panel (500 buses $\times$ 200 periods,
+reproducible seeds) and estimate $(\theta_1, \theta_2, RC)$ by nested
+fixed point maximum likelihood, treating transition parameters as known.
+(A Hotz--Miller CCP estimator exploiting replacement as a renewal action
+gives near-identical estimates in the one-dimensional pilot; we report
+NFXP throughout.) On the clone's data the estimator recovers
+$(0.047,\, 0.85,\, 9.53)$ --- the pipeline is validated before any claim
+rests on it.
+
+\section{Results}\label{sec:results}
+
+\subsection{Confidently wrong: fit does not imply mechanism}
+\label{sec:wrong}
+Table~\ref{tab:zoo} reports the zoo. Behavioral gaps on the ergodic state
+distribution are 1--3.5\% --- an econometrician with a realistic panel could
+not tell these agents apart --- and every estimation converges to a
+plausible interior optimum. Yet the categorical agents' estimates are far
+from the truth: $\rhat$ between 4.6 and 7.0 against 10, $\that{1}$
+attenuated by up to 60\%. Their out-of-distribution transport fails
+correspondingly: the regime-shift counterfactual (predicting behavior with
+the economy pinned at the worst regime) has RMSE up to 0.218, versus 0.008
+for the clone. Nothing in the fit signals this: the likelihood is smooth,
+the parameters are interior, standard errors would be unremarkable.
+
+\begin{table}[t]
+\centering\small
+\caption{The microfounded zoo: behavioral similarity, structural estimates,
+counterfactual failure, and the pre-policy conformity audit. Truth:
+$(\theta_1,\theta_2,RC) = (0.05, 0.8, 10)$. CF RMSE is the regime-shift
+transport error; ``subsidy RMSE'' the policy-prediction error in the
+pre-registered subsidy experiment (Section~\ref{sec:subsidy}).}
+\label{tab:zoo}
+\begin{tabular}{lccccccc}
+\toprule
+Agent & Behav.\ gap & $\that{1}$ & $\that{2}$ & $\rhat$ & CF RMSE &
+Subsidy RMSE & Conformity \\
+\midrule
+clone        & 0.001 & 0.047 & 0.85 & 9.53  & 0.008 & 0.013 & 0.45 \\
+cat$4{\times}1$  & 0.035 & 0.019 & 0.01 & 4.59  & 0.218 & 0.252 & 1.00 \\
+cat$6{\times}1$  & 0.026 & 0.034 & 0.05 & 6.30  & 0.118 & 0.130 & 0.80 \\
+cat$6{\times}2$  & 0.024 & 0.029 & 0.63 & 6.54  & 0.107 & 0.122 & 1.00 \\
+cat$8{\times}2$  & 0.014 & 0.033 & 0.59 & 7.01  & 0.075 & 0.096 & 0.97 \\
+cat$12{\times}3$ & 0.006 & 0.044 & 0.68 & 8.72  & 0.023 & 0.031 & 0.47 \\
+cat$16{\times}5$ & 0.003 & 0.045 & 0.83 & 9.20  & 0.017 & 0.020 & 0.45 \\
+sparse $m{=}0$   & 0.019 & 0.071 & 0.00 & 10.05 & 0.005 & 0.004 & 0.46 \\
+sparse $m{=}0.5$ & 0.009 & 0.062 & 0.34 & 10.17 & 0.008 & 0.007 & 0.42 \\
+RI $\lambda{=}0.25$ & 0.014 & 0.064 & 0.13 & 9.74 & 0.008 & 0.008 & 0.34 \\
+RI $\lambda{=}0.75$ & 0.005 & 0.055 & 0.54 & 9.90 & 0.005 & 0.004 & 0.44 \\
+asym low     & 0.012 & 0.065 & 0.28 & 9.91  & 0.026 & 0.016 & 0.70 \\
+asym high    & 0.008 & 0.052 & 0.42 & 9.86  & 0.023 & 0.019 & 0.53 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{In-class bounded rationality is absorbed, not punished}
+\label{sec:inclass}
+The striking rows of Table~\ref{tab:zoo} are the inattentive agents. The
+fully regime-blind sparse-max agent is fit with $\that{2} = 0.005$ and
+$\rhat = 10.05$, and has the \emph{lowest} counterfactual error in the zoo.
+Across both attention families, $\that{2}$ tracks the attention parameter
+($m$: $0.00 \to 0.34$; $\lambda$: $0.13 \to 0.54$): the estimator recovers
+the agent's \emph{as-if} preferences, and counterfactuals computed from them
+are correct \emph{for that agent} --- if the agent does not perceive the
+regime, a model that says so predicts its behavior under regime shifts
+perfectly. The mechanism behind this robustness is the observational
+equivalence of \citet{fosgerau2020}: attenuation-type inattention stays
+within the logit class, so it maps into parameters rather than into
+misspecification. The practical implication for structural work is
+double-edged. Reassuring: inattention of this type does not invalidate
+counterfactuals. Alarming: ``uses the variable less than the modeler
+assumed'' is invisible \emph{and harmless}, so audits that test variable
+use --- including our own LEACE-based amnesic audit, which measures exactly
+that --- are answering the wrong question. Rank correlation between the
+regime-use audit and counterfactual failure across the zoo: $-0.01$.
+
+\subsection{Probes fail; probe directions are causally idle}
+\label{sec:probes}
+Linear probes \citep{alainbengio2016} decode the value function and the
+regime from every agent's hidden layers with $R^2 \geq 0.99$ --- including
+from agents that demonstrably never use the regime. On a low-dimensional
+state this is unavoidable (any monotone representation decodes anything
+monotone), and it makes decodability worthless as a mechanism diagnostic.
+The failure is causal as well as statistical: patching the probe direction
+--- transplanting only its component between states --- moves behavior
+essentially not at all (recovery of the behavioral gap $\approx 0.03$),
+while patching the network's readout direction recovers 0.8--1.0 of it.
+A direction can carry a concept perfectly and carry none of the decision.
+This reproduces, in the smallest possible economic setting, the
+amnesic-probing thesis of \citet{elazar2021} and the decodability/causality
+dissociation the concept-erasure literature predicts \citep{ravfogel2020,
+belrose2023}.
+
+\subsection{Conformity audits: causal dispersion predicts failure}
+\label{sec:audit}
+What distinguishes the fatal agents is not \emph{which} variables they use
+but \emph{how}: lookup tables are locally flat and jump at category
+boundaries, while every member of the assumed model class responds smoothly.
+Our audit measures this directly. For each state variable, we patch the
+readout-direction component of the activation shift between adjacent states
+(mileage steps $x \to x{+}2$; regime steps $c \to c{+}1$) at in-distribution
+states, record the causal effect on the replacement probability, and compute
+the \emph{dispersion} (coefficient of variation) of these local
+sensitivities. A channel to which the agent is uniformly insensitive is
+scored as conforming --- some parameter value fits it exactly, which is
+precisely why regime-blindness is benign (Section~\ref{sec:inclass}); this
+``insensitivity gate'' is theoretically load-bearing, not a convenience
+(without it the audit misranks the regime-blind agent and the rank
+correlation drops from 0.87 to 0.69). The conformity score is the worse of
+the two normalized channel dispersions.
+
+The audit uses \emph{only} in-distribution activations --- no counterfactual
+data, no knowledge of the true parameters. It rank-predicts regime-shift
+counterfactual failure across the thirteen agents at Spearman
+\textbf{0.87} (single channels: 0.53 and 0.18). Within the categorical
+family, where coarseness varies cleanly, the ordering is perfect (Spearman
+1.00, $n=6$). The residual imperfection is honest and documented: the
+regime-blind sparse-max agent's mileage-sensitivity profile is somewhat
+uneven, which the audit reads as mild lookup-ness.
+
+\subsection{A pre-registered Lucas experiment: the subsidy counterfactual}
+\label{sec:subsidy}
+Transport tests hold the agent fixed. The sharper question --- the Lucas
+question --- is whether pre-policy estimates predict behavior after an
+intervention to which agents \emph{adapt}. We pre-registered the design and
+hypotheses in the repository before running it: a 50\% proportional
+replacement subsidy ($RC\!: 10 \to 5$); adaptation under a
+\emph{stable-cognitive-primitive} rule (each agent re-derives its policy in
+the new environment holding its cognitive constraint fixed --- same
+categories, same attention, same clamp); the econometrician predicts with
+pre-policy estimates at $\rhat/2$; metrics are the policy RMSE and the error
+in the predicted post-subsidy replacement rate --- the policy elasticity a
+regulator actually needs.
+
+Both hypotheses were confirmed. In-class agents pass: policy RMSE
+0.004--0.013, replacement-rate errors below 0.002. Categorical agents fail,
+ordered by coarseness: for the coarsest, the model predicts a post-subsidy
+replacement rate of 0.134 against an actual 0.094 --- \textbf{a predicted
+policy response roughly twice the actual one}. A cost-benefit analysis of
+the subsidy built on that structural model would overstate its effect by
+that factor while resting on an excellent in-sample fit. The pre-policy
+conformity audit rank-predicts subsidy failure at Spearman \textbf{0.80}
+(0.63 for the rate error).
+
+\section{Discussion}\label{sec:discussion}
+
+\paragraph{Audits as specification tests.} The results suggest reading
+internal audits not as ``interpretability'' in the explanatory sense but as
+\emph{specification tests on mechanisms}: each audit checks the conformity
+of the agent's internal computation to the assumed model class along one
+channel, and each counterfactual is threatened exactly by the channels it
+stresses --- an operational echo of \citet{kalouptsidi2021}'s point that
+identification is a property of specific counterfactuals, not of models.
+For human agents such tests are impossible. For algorithmic agents ---
+pricing systems, credit scorers, trading policies --- they are not, and
+regulators contemplating structural models of algorithmic behavior could in
+principle demand them.
+
+\paragraph{The scope boundary.} Our subsidy experiment holds the cognitive
+primitive fixed under intervention, and that assumption delimits the method.
+If attention is \emph{endogenous} --- responding to stakes, as rational
+inattention theory says it should \citep{mackowiak2023} --- then a subsidy
+that changes stakes moves the primitive itself: as-if parameters estimated
+pre-policy are no longer invariant, in-class agents fail too, and a
+pre-policy audit cannot see it coming, because pre-policy internals are
+genuinely conforming. This is the Lucas critique reconstituted one level
+up --- for cognitive parameters rather than behavioral ones --- and it
+defines precisely what conformity audits certify: invariance under
+\emph{mechanism-preserving} interventions. We develop the endogenous case
+in companion work.
+
+\paragraph{Limitations.} The laboratory is deliberately small: a
+two-variable state, two-layer MLPs, thirteen agents, transition parameters
+treated as known, and one estimator family. These choices buy exactness ---
+closed ground truth, perfect behavioral control, full internal access ---
+at the price of scale, and the diagnostic's behavior on deep networks,
+richer state spaces, and estimated transitions is open. The audit
+normalization is cross-agent; an absolute calibration (dispersion relative
+to a smooth-fit baseline) is the natural next step. We view the note as
+establishing the \emph{logic} of mechanism-level validation, on the model
+of Othello-GPT establishing the logic of world-model probing at toy scale.
+
+\section{Conclusion}\label{sec:conclusion}
+In a laboratory where the truth is known, structural estimation proved both
+more robust and more fragile than its reputation: robust to inattentive
+agents it can absorb into as-if parameters, silently wrong for categorical
+agents it cannot --- with fitted likelihoods that look identical. The
+difference is invisible to behavioral fit and to linear probes, and visible
+to causal conformity audits computed entirely in distribution. As economic
+decisions migrate to artificial agents whose internals are, for the first
+time in the history of the discipline, observable, mechanism-level
+specification testing becomes a real option --- and, we suspect, eventually
+a standard one.
+
+\begin{thebibliography}{99}\small
+
+\bibitem[Alain \& Bengio(2016)]{alainbengio2016}
+Alain, G., \& Bengio, Y. (2016). Understanding intermediate layers using
+linear classifier probes. \emph{arXiv:1610.01644}.
+
+\bibitem[Belrose et al.(2023)]{belrose2023}
+Belrose, N., Schneider-Joseph, D., Ravfogel, S., Cotterell, R., Raff, E.,
+\& Biderman, S. (2023). LEACE: Perfect linear concept erasure in closed
+form. \emph{NeurIPS 2023}; arXiv:2306.03819.
+
+\bibitem[Bugni \& Ura(2019)]{bugniura2019}
+Bugni, F.~A., \& Ura, T. (2019). Inference in dynamic discrete choice
+problems under local misspecification. \emph{Quantitative Economics},
+10(1), 67--103.
+
+\bibitem[Elazar et al.(2021)]{elazar2021}
+Elazar, Y., Ravfogel, S., Jacovi, A., \& Goldberg, Y. (2021). Amnesic
+probing: Behavioral explanation with amnesic counterfactuals.
+\emph{Transactions of the ACL}, 9, 160--175.
+
+\bibitem[Estrella \& Fuhrer(1999)]{estrellafuhrer1999}
+Estrella, A., \& Fuhrer, J.~C. (1999). Are ``deep'' parameters stable? The
+Lucas critique as an empirical hypothesis. \emph{FRB Boston WP} 99-4.
+
+\bibitem[Fosgerau et al.(2020)]{fosgerau2020}
+Fosgerau, M., Melo, E., de Palma, A., \& Shum, M. (2020). Discrete choice
+and rational inattention: A general equivalence result.
+\emph{International Economic Review}, 61(4), 1569--1589.
+
+\bibitem[Fryer \& Jackson(2008)]{fryerjackson2008}
+Fryer, R., \& Jackson, M.~O. (2008). A categorical model of cognition and
+biased decision making. \emph{B.E.\ Journal of Theoretical Economics}, 8(1).
+
+\bibitem[Fudenberg \& Strzalecki(2015)]{fudenbergstrzalecki2015}
+Fudenberg, D., \& Strzalecki, T. (2015). Dynamic logit with choice
+aversion. \emph{Econometrica}, 83(2), 651--691.
+
+\bibitem[Gabaix(2014)]{gabaix2014}
+Gabaix, X. (2014). A sparsity-based model of bounded rationality.
+\emph{Quarterly Journal of Economics}, 129(4), 1661--1710.
+
+\bibitem[Heckman(2010)]{heckman2010}
+Heckman, J.~J. (2010). Building bridges between structural and program
+evaluation approaches to evaluating policy. \emph{Journal of Economic
+Literature}, 48(2), 356--398.
+
+\bibitem[Heimersheim \& Nanda(2024)]{heimersheimnanda2024}
+Heimersheim, S., \& Nanda, N. (2024). How to use and interpret activation
+patching. \emph{arXiv:2404.15255}.
+
+\bibitem[Hotz \& Miller(1993)]{hotzmiller1993}
+Hotz, V.~J., \& Miller, R.~A. (1993). Conditional choice probabilities and
+the estimation of dynamic models. \emph{Review of Economic Studies}, 60(3),
+497--529.
+
+\bibitem[Kalouptsidi et al.(2021)]{kalouptsidi2021}
+Kalouptsidi, M., Scott, P.~T., \& Souza-Rodrigues, E. (2021).
+Identification of counterfactuals in dynamic discrete choice models.
+\emph{Quantitative Economics}, 12(2), 351--403.
+
+\bibitem[Li et al.(2023)]{li2023}
+Li, K., Hopkins, A.~K., Bau, D., Vi\'egas, F., Pfister, H., \& Wattenberg,
+M. (2023). Emergent world representations: Exploring a sequence model
+trained on a synthetic task. \emph{ICLR 2023}; arXiv:2210.13382.
+
+\bibitem[Lucas(1976)]{lucas1976}
+Lucas, R.~E. (1976). Econometric policy evaluation: A critique.
+\emph{Carnegie-Rochester Conference Series on Public Policy}, 1, 19--46.
+
+\bibitem[Ma\'ckowiak et al.(2023)]{mackowiak2023}
+Ma\'ckowiak, B., Mat\v{e}jka, F., \& Wiederholt, M. (2023). Rational
+inattention: A review. \emph{Journal of Economic Literature}, 61(1),
+226--273.
+
+\bibitem[Magnac \& Thesmar(2002)]{magnacthesmar2002}
+Magnac, T., \& Thesmar, D. (2002). Identifying dynamic discrete decision
+processes. \emph{Econometrica}, 70(2), 801--816.
+
+\bibitem[Mat\v{e}jka \& McKay(2015)]{matejkamckay2015}
+Mat\v{e}jka, F., \& McKay, A. (2015). Rational inattention to discrete
+choices: A new foundation for the multinomial logit model. \emph{American
+Economic Review}, 105(1), 272--298.
+
+\bibitem[McGrath et al.(2022)]{mcgrath2022}
+McGrath, T., Kapishnikov, A., Toma\v{s}ev, N., Pearce, A., Wattenberg, M.,
+Hassabis, D., Kim, B., Paquet, U., \& Kramnik, V. (2022). Acquisition of
+chess knowledge in AlphaZero. \emph{PNAS}, 119(47), e2206625119.
+
+\bibitem[Nanda et al.(2023)]{nanda2023}
+Nanda, N., Lee, A., \& Wattenberg, M. (2023). Emergent linear
+representations in world models of self-supervised sequence models.
+\emph{BlackboxNLP @ EMNLP 2023}; arXiv:2309.00941.
+
+\bibitem[Ravfogel et al.(2020)]{ravfogel2020}
+Ravfogel, S., Elazar, Y., Gonen, H., Twiton, M., \& Goldberg, Y. (2020).
+Null it out: Guarding protected attributes by iterative nullspace
+projection. \emph{ACL 2020}.
+
+\bibitem[Rust(1987)]{rust1987}
+Rust, J. (1987). Optimal replacement of GMC bus engines: An empirical model
+of Harold Zurcher. \emph{Econometrica}, 55(5), 999--1033.
+
+\bibitem[Skalse \& Abate(2024)]{skalseabate2024}
+Skalse, J., \& Abate, A. (2024). Partial identifiability and
+misspecification in inverse reinforcement learning.
+\emph{arXiv:2411.15951}.
+
+\bibitem[Steiner et al.(2017)]{steiner2017}
+Steiner, J., Stewart, C., \& Mat\v{e}jka, F. (2017). Rational inattention
+dynamics: Inertia and delay in decision-making. \emph{Econometrica}, 85(2),
+521--553.
+
+\bibitem[Vafa et al.(2024)]{vafa2024}
+Vafa, K., Chen, J., Rambachan, A., Kleinberg, J., \& Mullainathan, S.
+(2024). Evaluating the world model implicit in a generative model.
+\emph{NeurIPS 2024}; arXiv:2406.03689.
+
+\bibitem[Vafa et al.(2025)]{vafa2025}
+Vafa, K., Chang, P., Rambachan, A., \& Mullainathan, S. (2025). What has a
+foundation model found? Using inductive bias to probe for world models.
+\emph{ICML 2025}; arXiv:2507.06952.
+
+\end{thebibliography}
+
+\end{document}
