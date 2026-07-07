@@ -44,10 +44,11 @@ wrong by a factor of two. Third, linear probes cannot tell these cases apart
 (decodability is not use), but a battery of \emph{causal conformity audits}
 --- the dispersion of locally patched sensitivities per state variable,
 computed on in-distribution activations only --- rank-predicts
-counterfactual failure (Spearman 0.87 for out-of-distribution transport,
-0.80 for the subsidy experiment). Internal audits, we argue, are usefully
-understood as specification tests on mechanisms, and their scope is
-delimited exactly by the invariance of the cognitive primitive.
+counterfactual failure (Spearman 0.87 for out-of-distribution transport and
+0.80 for the subsidy experiment; permutation $p = 0.0001$ and $0.0007$).
+Internal audits, we argue, are usefully understood as specification tests on
+mechanisms, and their scope is delimited exactly by the invariance of the
+cognitive primitive.
 \end{abstract}
 
 \section{Introduction}\label{sec:intro}
@@ -115,8 +116,8 @@ causally idle, reproducing the amnesic-probing lesson of \citet{elazar2021}
 in an economic setting. But a \emph{conformity audit} --- the dispersion of
 locally patched causal sensitivities along each state variable, gated by
 insensitivity --- rank-predicts counterfactual failure at Spearman 0.87
-(regime transport) and 0.80 (subsidy), using in-distribution activations
-only.
+(regime transport; permutation $p = 0.0001$) and 0.80 (subsidy;
+$p = 0.0007$), using in-distribution activations only.
 
 We state the honest position of these results in the literature up front.
 That DDC counterfactuals can fail under misspecification is known theory
@@ -150,10 +151,12 @@ procedure, no parameter recovery, no counterfactual-validity claim.
 \paragraph{Identification and misspecification in DDC.}
 \citet{magnacthesmar2002} establish nonparametric non-identification;
 \citet{kalouptsidi2021} characterize which counterfactuals remain identified;
-\citet{bugniura2019} derive the bias from local misspecification. Our
-laboratory realizes these results concretely --- the categorical agents are
-the misspecification, the biased $\rhat$ is the predicted consequence ---
-and adds the diagnostic layer. In machine-learning dialect the same problem
+\citet{bugniura2019} derive the bias from local misspecification; and
+\citet{andrews2025} develop the general theory of structural estimation
+under misspecification and its implications for practice. Our laboratory
+realizes these results concretely --- the categorical agents are the
+misspecification, the biased $\rhat$ is the predicted consequence --- and
+adds the diagnostic layer. In machine-learning dialect the same problem
 is the partial identifiability of rewards in inverse reinforcement learning
 \citep{skalseabate2024}.
 
@@ -198,10 +201,16 @@ the \emph{clone} (optimal CCPs); six \emph{categorical} agents that act on
 ergodic-weighted category averages of the optimal policy over grids from
 $4\times1$ to $16\times5$ \citep{fryerjackson2008}; two \emph{sparse-max}
 agents perceiving $c' = m c + (1-m)\bar c$ with attention $m \in \{0, 0.5\}$
-\citep{gabaix2014}; two \emph{RI} agents attenuating toward the regime-blind
-policy with weight $\lambda \in \{0.25, 0.75\}$ \citep{matejkamckay2015,
-fosgerau2020}; and two \emph{salience-asymmetric} agents that ignore
-regimes below (above) the median. Identical architectures and inputs mean
+\citep{gabaix2014}; two \emph{RI-motivated attenuation} agents blending
+toward the regime-blind policy with weight $\lambda \in \{0.25, 0.75\}$
+\citep{matejkamckay2015, fosgerau2020};\footnote{A linear CCP blend, not
+the multiplicative tilt $P(i) \propto P_0(i)\exp(v_i/\lambda)$ of the exact
+Mat\v{e}jka--McKay RI-logit; we label it accordingly and designate the exact
+form as a robustness exercise. Likewise the sparse-max agents act optimally
+on the perceived state rather than re-solving the sparsified program ---
+the standard implementation shortcut, flagged here.} and two
+\emph{salience-asymmetric} agents that ignore regimes below (above) the
+median. Identical architectures and inputs mean
 that any difference in whether a variable is \emph{causally used} lives in
 the learned weights --- precisely what an internal audit must detect.
 
@@ -317,11 +326,24 @@ correlation drops from 0.87 to 0.69). The conformity score is the worse of
 the two normalized channel dispersions.
 
 The audit uses \emph{only} in-distribution activations --- no counterfactual
-data, no knowledge of the true parameters. It rank-predicts regime-shift
-counterfactual failure across the thirteen agents at Spearman
-\textbf{0.87} (single channels: 0.53 and 0.18). Within the categorical
-family, where coarseness varies cleanly, the ordering is perfect (Spearman
-1.00, $n=6$). The residual imperfection is honest and documented: the
+data, no knowledge of the true parameters. Two properties of the design
+deserve emphasis. First, \emph{independence}: the audit is computed from
+weights and activations at states the agent actually visits, before any
+counterfactual data exist --- the counterfactual outcomes it predicts are
+held-out objects computed later from a different environment, so the audit
+and its target are not the same quantity measured twice. Second,
+\emph{inference}: at $n = 13$ agents, the headline rank correlation of
+\textbf{0.87} has a one-sided Monte-Carlo permutation $p = 0.0001$,
+bootstrap 95\% CI $[0.49, 0.97]$, and a leave-one-out range of
+$[0.82, 0.92]$ --- no single agent drives it (single channels alone: 0.53
+and 0.18). Within the categorical family, where coarseness varies cleanly,
+the ordering happens to be perfect (Spearman 1.00, $n = 6$, exact one-sided
+$p = 1/6! \approx 0.0014$); at that sample size we present it as an
+illustration, not a headline. One caveat we flag rather than hide: audit
+scores are normalized across the agent set (min--max), so the level of any
+one score is composition-dependent; the leave-one-out band above bounds how
+much this matters here, and an absolute calibration is the designated
+refinement. The residual imperfection is honest and documented: the
 regime-blind sparse-max agent's mileage-sensitivity profile is somewhat
 uneven, which the audit reads as mild lookup-ness.
 
@@ -347,7 +369,8 @@ policy response roughly twice the actual one}. A cost-benefit analysis of
 the subsidy built on that structural model would overstate its effect by
 that factor while resting on an excellent in-sample fit. The pre-policy
 conformity audit rank-predicts subsidy failure at Spearman \textbf{0.80}
-(0.63 for the rate error).
+(permutation $p = 0.0007$, bootstrap 95\% CI $[0.39, 0.92]$, leave-one-out
+range $[0.75, 0.85]$; 0.63 for the rate error).
 
 \section{Discussion}\label{sec:discussion}
 
@@ -404,6 +427,12 @@ a standard one.
 \bibitem[Alain \& Bengio(2016)]{alainbengio2016}
 Alain, G., \& Bengio, Y. (2016). Understanding intermediate layers using
 linear classifier probes. \emph{arXiv:1610.01644}.
+
+\bibitem[Andrews et al.(2025)]{andrews2025}
+Andrews, I., Barahona, N., Gentzkow, M., Rambachan, A., \& Shapiro, J.~M.
+(2025). Structural estimation under misspecification: Theory and
+implications for practice. \emph{Quarterly Journal of Economics}, 140(3),
+1801--1861.
 
 \bibitem[Belrose et al.(2023)]{belrose2023}
 Belrose, N., Schneider-Joseph, D., Ravfogel, S., Cotterell, R., Raff, E.,

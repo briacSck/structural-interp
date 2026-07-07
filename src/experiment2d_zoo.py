@@ -213,4 +213,8 @@ where the probe-direction audit does not? Which out-of-class rules produce
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(
+        "DEPRECATED as a script: superseded by zoo_v2.py (this main() "
+        "predates crc32 seeding and would overwrite the annotated "
+        "zoo_summary.md). The module remains imported for its helpers "
+        "(train_on_target, bucket_average, c_shift_audit).")

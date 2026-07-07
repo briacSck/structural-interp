@@ -9,8 +9,10 @@ Every agent is now an instance of a named bounded-rationality primitive
   sparse_m{m}      Gabaix (2014) sparse-max: perceive c' = m*c + (1-m)*cbar
                    (attention weight m on the cost regime), act optimally
                    on the perceived state
-  ri_lam{l}        Matejka & McKay (2015) RI-logit attenuation toward the
-                   regime-blind policy (Fosgerau et al. 2020 equivalence)
+  ri_lam{l}        RI-MOTIVATED attenuation blend toward the regime-blind
+                   policy (linear CCP blend, NOT the exact Matejka-McKay
+                   multiplicative RI-logit tilt — labeled accordingly per
+                   the 2026-07-07 review; exact form = robustness exercise)
   asym_low/high    salience/default asymmetry: ignore regimes below (above)
                    the median by clamping to it
 
